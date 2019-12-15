@@ -108,6 +108,110 @@ impl Example {
     }
 }
 
+fn test_encoder(encoder: &mut wgpu::CommandEncoder, device: &wgpu::Device) {
+    let other_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        bindings: &[
+            wgpu::BindGroupLayoutBinding {
+                binding: 0,
+                visibility: wgpu::ShaderStage::FRAGMENT,
+                ty: wgpu::BindingType::SampledTexture { multisampled: false, dimension: wgpu::TextureViewDimension::D2 },
+            },
+        ],
+    });
+    let render_target1 = device.create_texture(&wgpu::TextureDescriptor {
+        size: wgpu::Extent3d { width: 100, height: 100, depth: 1 },
+        array_layer_count: 1,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8Unorm,
+        usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+    });
+    let render_target2 = device.create_texture(&wgpu::TextureDescriptor {
+        size: wgpu::Extent3d { width: 100, height: 100, depth: 1 },
+        array_layer_count: 1,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8Unorm,
+        usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+    });
+    let rt1_view = render_target1.create_default_view();
+    let rt2_view = render_target2.create_default_view();
+    let bind_group1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &other_bind_group_layout,
+        bindings: &[
+            wgpu::Binding {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&rt1_view),
+            },
+        ],
+    });
+    let bind_group2 = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &other_bind_group_layout,
+        bindings: &[
+            wgpu::Binding {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&rt2_view),
+            },
+        ],
+    });
+
+    {
+        let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &rt1_view,
+                resolve_target: None,
+                load_op: wgpu::LoadOp::Clear,
+                store_op: wgpu::StoreOp::Store,
+                clear_color: wgpu::Color {
+                    r: 0.1,
+                    g: 0.2,
+                    b: 0.3,
+                    a: 1.0,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+    }
+    {
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &rt2_view,
+                resolve_target: None,
+                load_op: wgpu::LoadOp::Clear,
+                store_op: wgpu::StoreOp::Store,
+                clear_color: wgpu::Color {
+                    r: 0.1,
+                    g: 0.2,
+                    b: 0.3,
+                    a: 1.0,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+        pass.set_bind_group(0, &bind_group1, &[]);
+    }
+    {
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &rt1_view,
+                resolve_target: None,
+                load_op: wgpu::LoadOp::Clear,
+                store_op: wgpu::StoreOp::Store,
+                clear_color: wgpu::Color {
+                    r: 0.1,
+                    g: 0.2,
+                    b: 0.3,
+                    a: 1.0,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+        pass.set_bind_group(0, &bind_group2, &[]);
+    }
+}
+
 impl framework::Example for Example {
     fn init(
         sc_desc: &wgpu::SwapChainDescriptor,
@@ -333,6 +437,9 @@ impl framework::Example for Example {
     ) -> wgpu::CommandBuffer {
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { todo: 0 });
+
+        test_encoder(&mut encoder, device);
+
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
