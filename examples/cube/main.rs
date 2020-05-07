@@ -93,7 +93,10 @@ struct Example {
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
     index_count: usize,
-    bind_group: wgpu::BindGroup,
+    bind_group_layout: wgpu::BindGroupLayout,
+    //bind_group: wgpu::BindGroup,
+    texture_view: wgpu::TextureView,
+    sampler: wgpu::Sampler,
     uniform_buf: wgpu::Buffer,
     pipeline: wgpu::RenderPipeline,
 }
@@ -218,26 +221,6 @@ impl framework::Example for Example {
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
-        // Create bind group
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
-                },
-                wgpu::Binding {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                wgpu::Binding {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
-                },
-            ],
-            label: None,
-        });
-
         // Create the render pipeline
         let vs_bytes = include_bytes!("shader.vert.spv");
         let fs_bytes = include_bytes!("shader.frag.spv");
@@ -300,7 +283,10 @@ impl framework::Example for Example {
             vertex_buf,
             index_buf,
             index_count: index_data.len(),
-            bind_group,
+            bind_group_layout,
+            //bind_group,
+            texture_view,
+            sampler,
             uniform_buf,
             pipeline,
         };
@@ -332,6 +318,25 @@ impl framework::Example for Example {
         crossbeam_utils::thread::scope(|s| {
             let sender = sender.clone();
             s.spawn(move |_| {
+                // Create bind group
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &self.bind_group_layout,
+                    bindings: &[
+                        wgpu::Binding {
+                            binding: 0,
+                            resource: wgpu::BindingResource::Buffer(self.uniform_buf.slice(..)),
+                        },
+                        wgpu::Binding {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(&self.texture_view),
+                        },
+                        wgpu::Binding {
+                            binding: 2,
+                            resource: wgpu::BindingResource::Sampler(&self.sampler),
+                        },
+                    ],
+                    label: None,
+                });
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
                 {
@@ -351,7 +356,7 @@ impl framework::Example for Example {
                         depth_stencil_attachment: None,
                     });
                     rpass.set_pipeline(&self.pipeline);
-                    rpass.set_bind_group(0, &self.bind_group, &[]);
+                    rpass.set_bind_group(0, &bind_group, &[]);
                     rpass.set_index_buffer(self.index_buf.slice(..));
                     rpass.set_vertex_buffer(0, self.vertex_buf.slice(..));
                     rpass.draw_indexed(0..self.index_count as u32, 0, 0..1);
