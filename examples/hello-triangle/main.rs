@@ -59,7 +59,11 @@ async fn run(event_loop: EventLoop<()>, window: Window, swapchain_format: wgpu::
         depth_stencil_state: None,
         vertex_state: wgpu::VertexStateDescriptor {
             index_format: wgpu::IndexFormat::Uint16,
-            vertex_buffers: &[],
+            vertex_buffers: &[wgpu::VertexBufferDescriptor {
+                stride: 2 * 2,
+                step_mode: wgpu::InputStepMode::Vertex,
+                attributes: &wgpu::vertex_attr_array![0 => Ushort2Norm], // Float2 works without error
+            }],
         },
         sample_count: 1,
         sample_mask: !0,
