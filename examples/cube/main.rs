@@ -3,6 +3,7 @@ mod framework;
 
 use bytemuck::{Pod, Zeroable};
 use wgpu::util::DeviceExt;
+use std::borrow::Cow;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -273,19 +274,22 @@ impl framework::Example for Example {
             }],
         };
 
-        let vs_module = device.create_shader_module(&wgpu::include_spirv!("shader.vert.spv"));
-        let fs_module = device.create_shader_module(&wgpu::include_spirv!("shader.frag.spv"));
+        let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+            experimental_translation: true,
+        });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
             vertex_stage: wgpu::ProgrammableStageDescriptor {
-                module: &vs_module,
-                entry_point: "main",
+                module: &shader,
+                entry_point: "vs_main",
             },
             fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                module: &fs_module,
-                entry_point: "main",
+                module: &shader,
+                entry_point: "fs_main",
             }),
             rasterization_state: Some(wgpu::RasterizationStateDescriptor {
                 front_face: wgpu::FrontFace::Ccw,
@@ -310,18 +314,16 @@ impl framework::Example for Example {
             .features()
             .contains(wgt::Features::NON_FILL_POLYGON_MODE)
         {
-            let fs_wire_module =
-                device.create_shader_module(&wgpu::include_spirv!("wire.frag.spv"));
             let pipeline_wire = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: None,
                 layout: Some(&pipeline_layout),
                 vertex_stage: wgpu::ProgrammableStageDescriptor {
-                    module: &vs_module,
-                    entry_point: "main",
+                    module: &shader,
+                    entry_point: "vs_main",
                 },
                 fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                    module: &fs_wire_module,
-                    entry_point: "main",
+                    module: &shader,
+                    entry_point: "fs_wire",
                 }),
                 rasterization_state: Some(wgpu::RasterizationStateDescriptor {
                     front_face: wgpu::FrontFace::Ccw,
