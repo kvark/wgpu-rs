@@ -10,7 +10,6 @@ use crate::{
 use std::{
     fmt,
     future::Future,
-    marker::PhantomData,
     ops::Range,
     pin::Pin,
     task::{self, Poll},
@@ -1395,7 +1394,6 @@ impl crate::Context for Context {
         BufferMappedRange {
             actual_mapping,
             temporary_mapping,
-            phantom: PhantomData,
         }
     }
 
@@ -1810,13 +1808,12 @@ impl crate::Context for Context {
 pub(crate) type SwapChainOutputDetail = ();
 
 #[derive(Debug)]
-pub struct BufferMappedRange<'a> {
+pub struct BufferMappedRange {
     actual_mapping: js_sys::Uint8Array,
     temporary_mapping: Vec<u8>,
-    phantom: PhantomData<&'a ()>,
 }
 
-impl<'a> crate::BufferMappedRangeSlice for BufferMappedRange<'a> {
+impl crate::BufferMappedRangeSlice for BufferMappedRange {
     fn slice(&self) -> &[u8] {
         &self.temporary_mapping
     }
