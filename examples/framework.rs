@@ -117,7 +117,7 @@ async fn setup<E: Example>(title: &str) -> Setup {
             other => panic!("Unknown backend: {}", other),
         }
     } else {
-        wgpu::BackendBit::PRIMARY
+        wgpu::BackendBit::DX12 //TEMP
     };
     let power_preference = if let Ok(power_preference) = std::env::var("WGPU_POWER_PREF") {
         match power_preference.to_lowercase().as_str() {

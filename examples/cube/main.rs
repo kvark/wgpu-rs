@@ -91,6 +91,7 @@ struct Example {
     index_buf: wgpu::Buffer,
     index_count: usize,
     bind_group: wgpu::BindGroup,
+    texture: wgpu::Texture,
     uniform_buf: wgpu::Buffer,
     pipeline: wgpu::RenderPipeline,
     pipeline_wire: Option<wgpu::RenderPipeline>,
@@ -207,7 +208,11 @@ impl framework::Example for Example {
                 bytes_per_row: Some(std::num::NonZeroU32::new(4 * size).unwrap()),
                 rows_per_image: None,
             },
-            texture_extent,
+            wgpu::Extent3d {
+                height: texture_extent.height-1,
+                width: texture_extent.width,
+                ..texture_extent
+            },
         );
 
         // Create other resources
@@ -347,6 +352,7 @@ impl framework::Example for Example {
             index_buf,
             index_count: index_data.len(),
             bind_group,
+            texture,
             uniform_buf,
             pipeline,
             pipeline_wire,
@@ -375,6 +381,27 @@ impl framework::Example for Example {
         queue: &wgpu::Queue,
         _spawner: &framework::Spawner,
     ) {
+        let size = 256u32;
+        let texels = create_texels(size as usize);
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &texels,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(std::num::NonZeroU32::new(4 * size).unwrap()),
+                rows_per_image: None,
+            },
+            wgpu::Extent3d {
+                height: size/2,
+                width: size,
+                depth_or_array_layers: 1,
+            },
+        );
+
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
