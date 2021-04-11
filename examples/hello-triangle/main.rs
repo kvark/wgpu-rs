@@ -70,7 +70,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let shader_flags = wgpu::ShaderFlags::VALIDATION;
     let mut blitter = WGPUBlitter::new(&device, wgpu::TextureFormat::Bgra8Unorm, shader_flags);
 
-    let texture = create_blue_image(&device, &queue, 50, 40);
+    let tex_size = (50, 40);
+    let texture = create_blue_image(&device, &queue, tex_size.0, tex_size.1);
+    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+        ..Default::default()
+    });
 
     let mut sc_desc = wgpu::SwapChainDescriptor {
         usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
@@ -127,10 +131,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
                 //
+                let mut blit_pass = blitter.create_blit_pass(&mut encoder, &frame.view);
                 {
-                    let mut blit_pass = blitter.create_blit_pass(&mut encoder, &frame.view);
+                    let ts = (tex_size.0 as f32, tex_size.1 as f32);
+                    blit_pass.blit(&device, &texture_view, ts, (50.0, 50.0));
 
-                    // blit_pass.blit(&device);
                 }
                 queue.submit(Some(encoder.finish()));
             }
