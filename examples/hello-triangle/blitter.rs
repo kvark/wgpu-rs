@@ -89,7 +89,6 @@ pub struct WGPUBlitter {
     bind_group_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     // bind_group_cache: BindGroupCache,
-
 }
 
 impl WGPUBlitter {
@@ -247,7 +246,7 @@ impl WGPUBlitter {
             pass,
             bind_group_layout: &self.bind_group_layout,
             sampler: &self.sampler,
-            bind_groups: vec![],
+            // bind_groups: vec![],
             // bind_group_cache: &mut self.bind_group_cache,
         }
     }
@@ -288,7 +287,7 @@ pub struct BlitPass<'a> {
     pub pass: wgpu::RenderPass<'a>,
     pub bind_group_layout: &'a wgpu::BindGroupLayout,
     pub sampler: &'a wgpu::Sampler,
-    bind_groups: Vec<wgpu::BindGroup>,
+    // bind_groups: Vec<wgpu::BindGroup>,
     // bind_group_cache: &'a mut BindGroupCache,
 }
 
@@ -322,7 +321,7 @@ impl<'a> BlitPass<'a> {
             ],
         });
 
-        self.bind_groups.push(bind_group);
+        // self.bind_groups.push(bind_group);
         // let bg = self.bind_groups.last().unwrap();
         // self.bind_group_cache
         // .get(device, self.bind_group_layout, id);
@@ -344,3 +343,62 @@ impl<'a> BlitPass<'a> {
 // impl first  {
 
 // }
+
+impl WGPUBlitter {
+    pub fn create_blit_encoder<'a>(&'a self, device: &wgpu::Device) -> BlitEncoder {
+        let encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        todo!()
+    }
+}
+
+pub struct BlitEncoder<'a> {
+    encoder: wgpu::CommandEncoder,
+    bind_group_layout: &'a wgpu::BindGroupLayout,
+    pass: wgpu::RenderPass<'a>,
+    pipeline: &'a wgpu::RenderPipeline,
+    bind_groups: Vec<wgpu::BindGroup>,
+}
+
+impl<'a> BlitEncoder<'a> {
+    pub fn create_bind_group(
+        &mut self,
+        device: &wgpu::Device,
+        texture_view: &wgpu::TextureView,
+    ) -> wgpu::BindGroup {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("blit bind group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                // wgpu::BindGroupEntry {
+                //     binding: 1,
+                //     resource: wgpu::BindingResource::Sampler(&self.sampler),
+                // },
+            ],
+        });
+
+        // self.bind_groups.push(bind_group);
+
+        // self.bind_groups.last().unwrap()
+        bind_group
+    }
+
+    pub fn blit(
+        &mut self,
+        device: &wgpu::Device,
+        src: &wgpu::TextureView,
+        src_size: (f32, f32),
+        dst_origin: (f32, f32),
+    ) {
+        let bg = self.create_bind_group(device, src);
+        self.pass.set_bind_group(0, &bg, &[]);
+    }
+
+    pub fn finish(self) -> wgpu::CommandBuffer {
+        self.encoder.finish()
+    }
+}

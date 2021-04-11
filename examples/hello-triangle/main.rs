@@ -151,6 +151,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 }
                 drop(blit_pass);
                 queue.submit(Some(encoder.finish()));
+
+                let mut blit_encoder = blitter.create_blit_encoder(&device);
+                {
+                    blit_encoder.blit(&device, &texture_view, src_size, (50.0, 50.0));
+                }
+                queue.submit(Some(blit_encoder.finish()));
             }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
