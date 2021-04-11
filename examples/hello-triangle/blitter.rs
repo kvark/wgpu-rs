@@ -353,7 +353,7 @@ impl WGPUBlitter {
 }
 
 pub struct BindGroupCache {
-    inner: Vec<wgpu::BindGroup>
+    inner: Vec<wgpu::BindGroup>,
 }
 
 impl BindGroupCache {
@@ -361,7 +361,7 @@ impl BindGroupCache {
         self.inner.push(x);
     }
 
-    pub fn last<'a>(&'a self,) -> &'a wgpu::BindGroup {
+    pub fn last<'a>(&'a self) -> &'a wgpu::BindGroup {
         self.inner.last().unwrap()
     }
 }
@@ -370,13 +370,14 @@ pub struct BlitEncoder<'a> {
     encoder: wgpu::CommandEncoder,
     bind_group_layout: &'a wgpu::BindGroupLayout,
     pass: wgpu::RenderPass<'a>,
+    sampler: &'a wgpu::Sampler,
     pipeline: &'a wgpu::RenderPipeline,
     bind_groups: BindGroupCache,
 }
 
 impl<'a> BlitEncoder<'a> {
     pub fn create_bind_group(
-        &mut self,
+        &'a mut self,
         device: &wgpu::Device,
         texture_view: &wgpu::TextureView,
     ) -> &'a wgpu::BindGroup {
@@ -388,29 +389,29 @@ impl<'a> BlitEncoder<'a> {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
-                // wgpu::BindGroupEntry {
-                //     binding: 1,
-                //     resource: wgpu::BindingResource::Sampler(&self.sampler),
-                // },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
             ],
         });
 
         // self.bind_groups.push(bind_group);
 
         self.bind_groups.push(bind_group);
-        // self.bind_groups.last()
-        todo!()
+        self.bind_groups.last()
+        // todo!()
     }
 
     pub fn blit(
-        &mut self,
+        &'a self,
         device: &wgpu::Device,
         src: &wgpu::TextureView,
         src_size: (f32, f32),
         dst_origin: (f32, f32),
     ) {
-        let bg = self.create_bind_group(device, src);
-        self.pass.set_bind_group(0, &bg, &[]);
+        // let bg = self.create_bind_group(device, src);
+        // self.pass.set_bind_group(0, &bg, &[]);
     }
 
     pub fn finish(self) -> wgpu::CommandBuffer {
