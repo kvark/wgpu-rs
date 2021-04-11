@@ -131,22 +131,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 // let mut v = vec![];
 
                 let src_size = (tex_size.0 as f32, tex_size.1 as f32);
-                // blit_pass.blit(&device, &texture_view,  ts, (50.0, 50.0));
-                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("blit bind group"),
-                    layout: &blitter.bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&texture_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&blitter.sampler),
-                        },
-                    ],
-                });
 
+                let bind_group = blitter.create_bind_group(&device, &&texture_view);
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
                 let mut blit_pass = blitter.create_blit_pass(&mut encoder, &frame.view);

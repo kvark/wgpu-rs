@@ -32,7 +32,8 @@ pub fn create_blue_image(
     // let texture = device.create_texture();
     let usage = wgpu::TextureUsage::RENDER_ATTACHMENT
         | wgpu::TextureUsage::COPY_SRC
-        | wgpu::TextureUsage::COPY_DST | wgpu::TextureUsage::SAMPLED;
+        | wgpu::TextureUsage::COPY_DST
+        | wgpu::TextureUsage::SAMPLED;
     let desc = wgpu::TextureDescriptor {
         size: texture_extent,
         mip_level_count: 1,
@@ -248,6 +249,29 @@ impl WGPUBlitter {
             bind_groups: vec![],
             // bind_group_cache: &mut self.bind_group_cache,
         }
+    }
+
+    pub fn create_bind_group(
+        &mut self,
+        device: &wgpu::Device,
+        texture_view: &wgpu::TextureView,
+    ) -> wgpu::BindGroup {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("blit bind group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+
+        bind_group
     }
 
     // pub fn clear_cache(&mut self) {
