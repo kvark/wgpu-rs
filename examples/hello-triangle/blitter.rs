@@ -345,10 +345,24 @@ impl<'a> BlitPass<'a> {
 // }
 
 impl WGPUBlitter {
-    pub fn create_blit_encoder<'a>(&'a self, device: &wgpu::Device) -> BlitEncoder {
+    pub fn create_blit_encoder<'a>(&'a self, device: &wgpu::Device) -> BlitEncoder<'a> {
         let encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         todo!()
+    }
+}
+
+pub struct BindGroupCache {
+    inner: Vec<wgpu::BindGroup>
+}
+
+impl BindGroupCache {
+    pub fn push(&mut self, x: wgpu::BindGroup) {
+        self.inner.push(x);
+    }
+
+    pub fn last<'a>(&'a self,) -> &'a wgpu::BindGroup {
+        self.inner.last().unwrap()
     }
 }
 
@@ -357,7 +371,7 @@ pub struct BlitEncoder<'a> {
     bind_group_layout: &'a wgpu::BindGroupLayout,
     pass: wgpu::RenderPass<'a>,
     pipeline: &'a wgpu::RenderPipeline,
-    bind_groups: Vec<wgpu::BindGroup>,
+    bind_groups: BindGroupCache,
 }
 
 impl<'a> BlitEncoder<'a> {
@@ -365,7 +379,7 @@ impl<'a> BlitEncoder<'a> {
         &mut self,
         device: &wgpu::Device,
         texture_view: &wgpu::TextureView,
-    ) -> wgpu::BindGroup {
+    ) -> &'a wgpu::BindGroup {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("blit bind group"),
             layout: &self.bind_group_layout,
@@ -383,8 +397,9 @@ impl<'a> BlitEncoder<'a> {
 
         // self.bind_groups.push(bind_group);
 
-        // self.bind_groups.last().unwrap()
-        bind_group
+        self.bind_groups.push(bind_group);
+        // self.bind_groups.last()
+        todo!()
     }
 
     pub fn blit(
