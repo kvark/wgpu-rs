@@ -68,7 +68,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     });
 
     let shader_flags = wgpu::ShaderFlags::VALIDATION;
-    let mut blitter = WGPUBlitter::new(&device, wgpu::TextureFormat::Bgra8Unorm, shader_flags);
+    let mut blitter = WGPUBlitter::new(&device, wgpu::TextureFormat::Bgra8UnormSrgb, shader_flags);
 
     let tex_size = (50, 40);
     let texture = create_blue_image(&device, &queue, tex_size.0, tex_size.1);
