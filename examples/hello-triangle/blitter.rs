@@ -30,13 +30,16 @@ pub fn create_blue_image(
     };
 
     // let texture = device.create_texture();
+    let usage = wgpu::TextureUsage::RENDER_ATTACHMENT
+        | wgpu::TextureUsage::COPY_SRC
+        | wgpu::TextureUsage::COPY_DST | wgpu::TextureUsage::SAMPLED;
     let desc = wgpu::TextureDescriptor {
         size: texture_extent,
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
+        usage,
         label: None,
     };
     let red: [u8; 4] = [0, 0, 255, 255];
@@ -82,8 +85,8 @@ pub fn create_blue_image(
 // use std::cell::RefCell;
 pub struct WGPUBlitter {
     pipeline: wgpu::RenderPipeline,
-    bind_group_layout: wgpu::BindGroupLayout,
-    sampler: wgpu::Sampler,
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    pub sampler: wgpu::Sampler,
     // bind_group_cache: BindGroupCache,
 }
 
@@ -251,19 +254,17 @@ impl WGPUBlitter {
 }
 
 pub struct BlitPass<'a> {
-    pass: wgpu::RenderPass<'a>,
-    bind_group_layout: &'a wgpu::BindGroupLayout,
-    sampler: &'a wgpu::Sampler,
+    pub pass: wgpu::RenderPass<'a>,
+    pub bind_group_layout: &'a wgpu::BindGroupLayout,
+    pub sampler: &'a wgpu::Sampler,
     bind_groups: Vec<wgpu::BindGroup>,
     // bind_group_cache: &'a mut BindGroupCache,
 }
 
 impl<'a> BlitPass<'a> {
     pub fn blit(
-        &'a mut self,
+        &mut self,
         device: &wgpu::Device,
-
-        // id: femtovg::ImageId,
         src: &wgpu::TextureView,
         src_size: (f32, f32),
         dst_origin: (f32, f32),
@@ -291,16 +292,19 @@ impl<'a> BlitPass<'a> {
         });
 
         self.bind_groups.push(bind_group);
-        let bg = self.bind_groups.last().unwrap();
+        // let bg = self.bind_groups.last().unwrap();
         // self.bind_group_cache
         // .get(device, self.bind_group_layout, id);
         self.pass
             .set_viewport(dst_origin.0, dst_origin.1, src_size.0, src_size.1, 0.0, 1.0);
 
-        self.pass.set_bind_group(0, &bg, &[]);
+        // self.pass.set_bind_group(0, &bg, &[]);
         self.pass.draw(0..4, 0..1);
     }
 
+    // pub fn finish(mut self, queue: &wgpu::Queue, encoder: wgpu::CommandEncoder) {
+    //     queue.submit(Some(encoder.finish()))
+    // }
     // fn finish(mut self) -> wgpu::CommandBuffer {
     //     self.pass.finish()
     // }

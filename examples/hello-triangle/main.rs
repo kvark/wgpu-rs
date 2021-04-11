@@ -77,7 +77,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     });
 
     let mut sc_desc = wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+        usage: wgpu::TextureUsage::RENDER_ATTACHMENT, // | wgpu::TextureUsage::COPY_DST,
         format: swapchain_format,
         width: size.width,
         height: size.height,
@@ -128,15 +128,42 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 }
                 queue.submit(Some(encoder.finish()));
 
+                // let mut v = vec![];
+
+                let src_size = (tex_size.0 as f32, tex_size.1 as f32);
+                // blit_pass.blit(&device, &texture_view,  ts, (50.0, 50.0));
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("blit bind group"),
+                    layout: &blitter.bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(&texture_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&blitter.sampler),
+                        },
+                    ],
+                });
+
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-                //
                 let mut blit_pass = blitter.create_blit_pass(&mut encoder, &frame.view);
+                //
                 {
-                    let ts = (tex_size.0 as f32, tex_size.1 as f32);
-                    blit_pass.blit(&device, &texture_view, ts, (50.0, 50.0));
+                    // self.bind_groups.push(bind_group);
+                    // let bg = self.bind_groups.last().unwrap();
+                    // self.bind_group_cache
+                    // .get(device, self.bind_group_layout, id);
+                    blit_pass
+                        .pass
+                        .set_viewport(50.0, 50.0, src_size.0, src_size.1, 0.0, 1.0);
 
+                    blit_pass.pass.set_bind_group(0, &bind_group, &[]);
+                    blit_pass.pass.draw(0..4, 0..1);
                 }
+                drop(blit_pass);
                 queue.submit(Some(encoder.finish()));
             }
             Event::WindowEvent {
