@@ -86,9 +86,10 @@ pub fn create_blue_image(
 // use std::cell::RefCell;
 pub struct WGPUBlitter {
     pipeline: wgpu::RenderPipeline,
-    pub bind_group_layout: wgpu::BindGroupLayout,
-    pub sampler: wgpu::Sampler,
+    bind_group_layout: wgpu::BindGroupLayout,
+    sampler: wgpu::Sampler,
     // bind_group_cache: BindGroupCache,
+
 }
 
 impl WGPUBlitter {

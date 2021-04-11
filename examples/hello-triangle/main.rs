@@ -132,7 +132,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
                 let src_size = (tex_size.0 as f32, tex_size.1 as f32);
 
-                let bind_group = blitter.create_bind_group(&device, &&texture_view);
+                let bind_group = blitter.create_bind_group(&device, &texture_view);
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
                 let mut blit_pass = blitter.create_blit_pass(&mut encoder, &frame.view);
