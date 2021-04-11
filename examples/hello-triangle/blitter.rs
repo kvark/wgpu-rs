@@ -17,13 +17,12 @@ use std::borrow::Cow;
 
 use wgpu::util::DeviceExt;
 
-pub fn create_red_image(
+pub fn create_blue_image(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     width: usize,
     height: usize,
 ) -> wgpu::Texture {
-
     let texture_extent = wgpu::Extent3d {
         width: width as u32,
         height: height as u32,
@@ -40,18 +39,12 @@ pub fn create_red_image(
         usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
         label: None,
     };
-    let red: [u8; 4] = [255, 0,0,255];
+    let red: [u8; 4] = [0, 0, 255, 255];
     let data = vec![red; width * height];
 
-    let slice = unsafe {
-        std::slice::from_raw_parts(data.as_ptr() as *const _, data.len() * 4)
-    };
+    let slice = unsafe { std::slice::from_raw_parts(data.as_ptr() as *const _, data.len() * 4) };
 
-    let texture = device.create_texture_with_data(
-        queue,
-        &desc,
-        slice
-    );
+    let texture = device.create_texture_with_data(queue, &desc, slice);
 
     texture
 }
@@ -90,6 +83,7 @@ pub fn create_red_image(
 pub struct WGPUBlitter {
     pipeline: wgpu::RenderPipeline,
     bind_group_layout: wgpu::BindGroupLayout,
+    sampler: wgpu::Sampler,
     // bind_group_cache: BindGroupCache,
 }
 
@@ -107,46 +101,60 @@ impl WGPUBlitter {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("blit.wgsl"))),
             flags: shader_flags,
         });
-
+        // uniform
+        // texture view
+        // sampler
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
             entries: &[
-                // wgpu::BindGroupLayoutEntry {
-                //     binding: 0,
-                //     visibility: wgpu::ShaderStage::FRAGMENT,
-                //     ty: wgpu::BindingType::Texture {
-                //         multisampled: false,
-                //         view_dimension: wgpu::TextureViewDimension::D2,
-                //         sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                //     },
-                //     count: None,
-                // },
-                // wgpu::BindGroupLayoutEntry {
-                //     binding: 1,
-                //     visibility: wgpu::ShaderStage::FRAGMENT,
-                //     ty: wgpu::BindingType::Sampler {
-                //         filtering: false,
-                //         comparison: false,
-                //     },
-                //     count: None,
-                // },
+                //uniform
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler {
+                        filtering: false,
+                        comparison: false,
+                    },
+                    count: None,
+                },
             ],
         });
 
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("blit bind group"),
-            layout: &bind_group_layout,
-            entries: &[
-                // wgpu::BindGroupEntry {
-                //     binding: 0,
-                //     resource: wgpu::BindingResource::Sampler(&sampler),
-                // },
-                // wgpu::BindGroupEntry {
-                //     binding: 1,
-                //     resource: wgpu::BindingResource::TextureView(input),
-                // },
-            ],
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("mip"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
         });
+
+        // let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        //     label: Some("blit bind group"),
+        //     layout: &bind_group_layout,
+        //     entries: &[
+        //         wgpu::BindGroupEntry {
+        //             binding: 0,
+        //             resource: wgpu::BindingResource::TextureView(input),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 1,
+        //             resource: wgpu::BindingResource::Sampler(&sampler),
+        //         },
+        //     ],
+        // });
 
         // let bind_group_cache = BindGroupCache::new();
 
@@ -171,7 +179,11 @@ impl WGPUBlitter {
             multisample: wgpu::MultisampleState::default(),
         });
 
-        todo!()
+        Self {
+            sampler,
+            bind_group_layout,
+            pipeline,
+        }
     }
 
     pub fn create_blit_pass<'a>(
@@ -223,6 +235,8 @@ impl WGPUBlitter {
         BlitPass {
             pass,
             bind_group_layout: &self.bind_group_layout,
+            sampler: &self.sampler,
+            bind_groups: vec![],
             // bind_group_cache: &mut self.bind_group_cache,
         }
     }
@@ -239,27 +253,51 @@ impl WGPUBlitter {
 pub struct BlitPass<'a> {
     pass: wgpu::RenderPass<'a>,
     bind_group_layout: &'a wgpu::BindGroupLayout,
+    sampler: &'a wgpu::Sampler,
+    bind_groups: Vec<wgpu::BindGroup>,
     // bind_group_cache: &'a mut BindGroupCache,
 }
 
 impl<'a> BlitPass<'a> {
     pub fn blit(
-        &mut self,
+        &'a mut self,
         device: &wgpu::Device,
-        // id: femtovg::ImageId,
-        // src: &femtovg::renderer::WGPUTexture,
 
+        // id: femtovg::ImageId,
+        src: &wgpu::TextureView,
+        src_size: (f32, f32),
+        dst_origin: (f32, f32),
     ) {
         // pass.set
-        let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &self.bind_group_layout,
-            entries: &[],
-        });
-        // self.bind_group_cache
-            // .get(device, self.bind_group_layout, id);
+        // let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        //     label: None,
+        //     layout: &self.bind_group_layout,
+        //     entries: &[],
+        // });
 
-        // self.pass.set_bind_group(0, &bg, &[]);
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("blit bind group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(src),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+
+        self.bind_groups.push(bind_group);
+        let bg = self.bind_groups.last().unwrap();
+        // self.bind_group_cache
+        // .get(device, self.bind_group_layout, id);
+        self.pass
+            .set_viewport(dst_origin.0, dst_origin.1, src_size.0, src_size.1, 0.0, 1.0);
+
+        self.pass.set_bind_group(0, &bg, &[]);
         self.pass.draw(0..4, 0..1);
     }
 

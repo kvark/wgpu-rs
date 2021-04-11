@@ -5,10 +5,8 @@ use winit::{
     window::Window,
 };
 
-
 mod blitter;
 pub use blitter::*;
-
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
     let size = window.inner_size();
@@ -69,6 +67,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         multisample: wgpu::MultisampleState::default(),
     });
 
+    let shader_flags = wgpu::ShaderFlags::VALIDATION;
+    let mut blitter = WGPUBlitter::new(&device, wgpu::TextureFormat::Bgra8Unorm, shader_flags);
+
+    let texture = create_blue_image(&device, &queue, 50, 40);
+
     let mut sc_desc = wgpu::SwapChainDescriptor {
         usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
         format: swapchain_format,
@@ -119,7 +122,16 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     rpass.set_pipeline(&render_pipeline);
                     rpass.draw(0..3, 0..1);
                 }
+                queue.submit(Some(encoder.finish()));
 
+                let mut encoder =
+                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+                //
+                {
+                    let mut blit_pass = blitter.create_blit_pass(&mut encoder, &frame.view);
+
+                    // blit_pass.blit(&device);
+                }
                 queue.submit(Some(encoder.finish()));
             }
             Event::WindowEvent {
