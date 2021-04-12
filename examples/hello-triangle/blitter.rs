@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 // we have to create a new encoder since we need the target
 
 // pub trait DeviceExt {
@@ -353,34 +353,44 @@ impl WGPUBlitter {
 }
 
 pub struct BindGroupCache {
-    inner: Vec<wgpu::BindGroup>,
+    inner: std::cell::UnsafeCell<Vec<wgpu::BindGroup>>,
 }
 
 impl BindGroupCache {
-    pub fn push(&mut self, x: wgpu::BindGroup) {
-        self.inner.push(x);
+    fn inner<'a>(&'a self) -> &'a mut Vec<wgpu::BindGroup> {
+        unsafe { self.inner.get().as_mut().unwrap() }
+    }
+
+    pub fn push(&self, x: wgpu::BindGroup) {
+        self.inner().push(x);
     }
 
     pub fn last<'a>(&'a self) -> &'a wgpu::BindGroup {
-        self.inner.last().unwrap()
+        self.inner().last().unwrap()
+        // let m = self.inner.get().as_ref().unwrap();
+        // m.last()
+        // todo!()
     }
 }
 
+// a outlasts b
 pub struct BlitEncoder<'a> {
     encoder: wgpu::CommandEncoder,
     bind_group_layout: &'a wgpu::BindGroupLayout,
-    pass: wgpu::RenderPass<'a>,
     sampler: &'a wgpu::Sampler,
     pipeline: &'a wgpu::RenderPipeline,
-    bind_groups: BindGroupCache,
+    // bind_groups: BindGroupCache,
+    bind_groups: typed_arena::Arena<wgpu::BindGroup>,
+    // pass: std::cell::UnsafeCell<wgpu::RenderPass<'a>>,
+    pass: wgpu::RenderPass<'a>,
 }
 
 impl<'a> BlitEncoder<'a> {
-    pub fn create_bind_group(
-        &'a mut self,
+    fn create_bind_group<'b>(
+        &'b self,
         device: &wgpu::Device,
         texture_view: &wgpu::TextureView,
-    ) -> &'a wgpu::BindGroup {
+    ) -> &'b wgpu::BindGroup {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("blit bind group"),
             layout: &self.bind_group_layout,
@@ -396,22 +406,23 @@ impl<'a> BlitEncoder<'a> {
             ],
         });
 
-        // self.bind_groups.push(bind_group);
+        self.bind_groups.alloc(bind_group)
 
-        self.bind_groups.push(bind_group);
-        self.bind_groups.last()
         // todo!()
     }
 
     pub fn blit(
-        &'a self,
+        &mut self,
         device: &wgpu::Device,
         src: &wgpu::TextureView,
         src_size: (f32, f32),
         dst_origin: (f32, f32),
     ) {
-        // let bg = self.create_bind_group(device, src);
-        // self.pass.set_bind_group(0, &bg, &[]);
+        let bg = self.create_bind_group(device, src);
+        self.pass.set_bind_group(0, bg, &[]);
+        // unsafe {
+        //     self.pass.get_mut().set_bind_group(0, &bg, &[]);
+        // }
     }
 
     pub fn finish(self) -> wgpu::CommandBuffer {

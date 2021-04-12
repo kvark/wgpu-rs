@@ -51,6 +51,7 @@ profiling = { version = "0.1.10", default-features = false } # Need 0.1.10+ to a
 raw-window-handle = "0.3"
 serde = { version = "1", features = ["derive"], optional = true }
 smallvec = "1"
+typed-arena = "*"
 
 [dev-dependencies]
 bytemuck = { version = "1.4", features = ["derive"] }
