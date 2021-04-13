@@ -68,7 +68,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     });
 
     let shader_flags = wgpu::ShaderFlags::VALIDATION;
-    let mut blitter = WGPUBlitter::new(&device, wgpu::TextureFormat::Bgra8UnormSrgb, shader_flags);
+    let blitter = WGPUBlitter::new(&device, wgpu::TextureFormat::Bgra8UnormSrgb, shader_flags);
 
     let tex_size = (50, 40);
     let texture = create_blue_image(&device, &queue, tex_size.0, tex_size.1);
@@ -135,11 +135,10 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
 
                 let mut blit_encoder = blitter.create_blit_encoder(&device);
-                let mut blit_pass = blit_encoder.create_blit_pass(&frame.view);
                 {
+                    let mut blit_pass = blit_encoder.create_blit_pass(&frame.view);
                     // blit_encoder.blit(&device, &texture_view, src_size, (50.0, 50.0));
                     blit_pass.blit(&device, &texture_view, src_size, (50.0, 50.0));
-                    drop(blit_pass);
                 }
 
                 queue.submit(Some(blit_encoder.finish()));

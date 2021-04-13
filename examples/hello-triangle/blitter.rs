@@ -1,4 +1,4 @@
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
 pub fn create_blue_image(
@@ -157,8 +157,8 @@ pub struct BlitEncoder<'a> {
     pipeline: &'a wgpu::RenderPipeline,
 }
 
-impl<'a> BlitEncoder<'a> {
-    pub fn create_blit_pass(&'a mut self, target: &'a wgpu::TextureView) -> BlitPass<'a> {
+impl<'b> BlitEncoder<'b> {
+    pub fn create_blit_pass<'a>(&'a mut self, target: &'a wgpu::TextureView) -> BlitPass<'a> where 'b: 'a {
         let pass_desc = wgpu::RenderPassDescriptor {
             label: Some("render pass"),
             color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -176,7 +176,7 @@ impl<'a> BlitEncoder<'a> {
             pass,
             bind_group_layout: &self.bind_group_layout,
             sampler: &self.sampler,
-            bind_groups: &mut self.bind_groups,
+            bind_groups: &self.bind_groups,
         }
     }
 
@@ -189,14 +189,14 @@ pub struct BlitPass<'a> {
     pub pass: wgpu::RenderPass<'a>,
     pub bind_group_layout: &'a wgpu::BindGroupLayout,
     pub sampler: &'a wgpu::Sampler,
-    pub bind_groups: &'a mut typed_arena::Arena<wgpu::BindGroup>,
+    pub bind_groups: &'a typed_arena::Arena<wgpu::BindGroup>,
 }
 
 impl<'a> BlitPass<'a> {
     fn create_bind_group(
-        &'a mut self,
+        &self,
         device: &wgpu::Device,
-        texture_view: &wgpu::TextureView,
+        texture_view: &'a wgpu::TextureView,
     ) -> &'a wgpu::BindGroup {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("blit bind group"),
@@ -217,9 +217,9 @@ impl<'a> BlitPass<'a> {
     }
 
     pub fn blit(
-        &'a mut self,
+        &mut self,
         device: &wgpu::Device,
-        src: &wgpu::TextureView,
+        src: &'a wgpu::TextureView,
         src_size: (f32, f32),
         dst_origin: (f32, f32),
     ) {
