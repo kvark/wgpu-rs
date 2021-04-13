@@ -97,8 +97,6 @@ impl WGPUBlitter {
         format: wgpu::TextureFormat,
         shader_flags: wgpu::ShaderFlags,
     ) -> Self {
-        // let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        // let path = root.join("src/shaders/blit.wgsl");
 
         let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
@@ -196,60 +194,60 @@ impl WGPUBlitter {
         }
     }
 
-    pub fn create_blit_pass<'a>(
-        &'a mut self,
-        encoder: &'a mut wgpu::CommandEncoder,
-        target: &'a wgpu::TextureView,
-    ) -> BlitPass<'a> {
-        let pass_desc = wgpu::RenderPassDescriptor {
-            label: Some("render pass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: target,
-                resolve_target: None, // todo! what's this?
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: None,
-            // depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-            //     view: stencil_view,
-            //     // depth_ops: None,
-            //     depth_ops: Some(wgpu::Operations {
-            //         load: wgpu::LoadOp::Clear(0.0),
-            //         store: true,
-            //     }),
-            //     // todo: what is this?
-            //     // stencil_ops: None,
-            //     stencil_ops: Some(wgpu::Operations {
-            //         load: wgpu::LoadOp::Clear(0),
-            //         store: true,
-            //     }), //Option<Operations<u32>>,
-            //         // stencil_ops: Some(wgpu::Operations {
-            //         //     load: wgpu::LoadOp::Clear(0),
-            //         //     store: true,
-            //         // }), //Option<Operations<u32>>,
-            // }),
-        };
+    // pub fn create_blit_pass<'a>(
+    //     &'a mut self,
+    //     encoder: &'a mut wgpu::CommandEncoder,
+    //     target: &'a wgpu::TextureView,
+    // ) -> BlitPass<'a> {
+    //     let pass_desc = wgpu::RenderPassDescriptor {
+    //         label: Some("render pass"),
+    //         color_attachments: &[wgpu::RenderPassColorAttachment {
+    //             view: target,
+    //             resolve_target: None, // todo! what's this?
+    //             ops: wgpu::Operations {
+    //                 load: wgpu::LoadOp::Load,
+    //                 store: true,
+    //             },
+    //         }],
+    //         depth_stencil_attachment: None,
+    //         // depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+    //         //     view: stencil_view,
+    //         //     // depth_ops: None,
+    //         //     depth_ops: Some(wgpu::Operations {
+    //         //         load: wgpu::LoadOp::Clear(0.0),
+    //         //         store: true,
+    //         //     }),
+    //         //     // todo: what is this?
+    //         //     // stencil_ops: None,
+    //         //     stencil_ops: Some(wgpu::Operations {
+    //         //         load: wgpu::LoadOp::Clear(0),
+    //         //         store: true,
+    //         //     }), //Option<Operations<u32>>,
+    //         //         // stencil_ops: Some(wgpu::Operations {
+    //         //         //     load: wgpu::LoadOp::Clear(0),
+    //         //         //     store: true,
+    //         //         // }), //Option<Operations<u32>>,
+    //         // }),
+    //     };
 
-        // let mut pass = encoder.begin_render_pass(&pass_desc);
-        // pass.set_viewport(0.0, 0.0, view_size.w as _, view_size.h as _, 0.0, 1.0);
+    //     // let mut pass = encoder.begin_render_pass(&pass_desc);
+    //     // pass.set_viewport(0.0, 0.0, view_size.w as _, view_size.h as _, 0.0, 1.0);
 
-        // pass.set_vertex_buffer(0, vertex_buffer.as_ref().slice(..));
-        // pass.set_stencil_reference(0);
+    //     // pass.set_vertex_buffer(0, vertex_buffer.as_ref().slice(..));
+    //     // pass.set_stencil_reference(0);
 
-        // pass.set_index_buffer(index_buffer.as_ref().slice(..), wgpu::IndexFormat::Uint32);
-        let mut pass = encoder.begin_render_pass(&pass_desc);
-        pass.set_pipeline(&self.pipeline);
+    //     // pass.set_index_buffer(index_buffer.as_ref().slice(..), wgpu::IndexFormat::Uint32);
+    //     let mut pass = encoder.begin_render_pass(&pass_desc);
+    //     pass.set_pipeline(&self.pipeline);
 
-        BlitPass {
-            pass,
-            bind_group_layout: &self.bind_group_layout,
-            sampler: &self.sampler,
-            // bind_groups: vec![],
-            // bind_group_cache: &mut self.bind_group_cache,
-        }
-    }
+    //     BlitPass {
+    //         pass,
+    //         bind_group_layout: &self.bind_group_layout,
+    //         sampler: &self.sampler,
+    //         // bind_groups: vec![],
+    //         // bind_group_cache: &mut self.bind_group_cache,
+    //     }
+    // }
 
     pub fn create_bind_group(
         &mut self,
@@ -283,10 +281,164 @@ impl WGPUBlitter {
     // }
 }
 
+
+
+// impl first  {
+
+// }
+
+impl WGPUBlitter {
+    pub fn create_blit_encoder<'a>(&'a self, device: &wgpu::Device) -> BlitEncoder<'a> {
+        let encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        // BlitEncoder {
+        //     encoder,
+        //     bind_groups: Default::default(),
+        // }
+        BlitEncoder {
+            encoder,
+            bind_groups: Default::default(),
+
+            bind_group_layout: &self.bind_group_layout,
+            sampler: &self.sampler,
+            pipeline: &self.pipeline,
+        }
+    }
+}
+
+// pub struct BindGroupCache {
+//     inner: std::cell::UnsafeCell<Vec<wgpu::BindGroup>>,
+// }
+
+// impl BindGroupCache {
+//     fn inner<'a>(&'a self) -> &'a mut Vec<wgpu::BindGroup> {
+//         unsafe { self.inner.get().as_mut().unwrap() }
+//     }
+
+//     pub fn push(&self, x: wgpu::BindGroup) {
+//         self.inner().push(x);
+//     }
+
+//     pub fn last<'a>(&'a self) -> &'a wgpu::BindGroup {
+//         self.inner().last().unwrap()
+//         // let m = self.inner.get().as_ref().unwrap();
+//         // m.last()
+//         // todo!()
+//     }
+// }
+
+// a outlasts b
+pub struct BlitEncoder<'a> {
+    encoder: wgpu::CommandEncoder,
+    bind_groups: typed_arena::Arena<wgpu::BindGroup>,
+
+    bind_group_layout: &'a wgpu::BindGroupLayout,
+    sampler: &'a wgpu::Sampler,
+    pipeline: &'a wgpu::RenderPipeline,
+    // bind_groups: BindGroupCache,
+
+    // pass: std::cell::UnsafeCell<wgpu::RenderPass<'a>>,
+    
+}
+
+
+impl<'a> BlitEncoder<'a> {
+    pub fn create_blit_pass(&'a mut self, target: &'a wgpu::TextureView) -> BlitPass<'a> {
+        let pass_desc = wgpu::RenderPassDescriptor {
+            label: Some("render pass"),
+            color_attachments: &[wgpu::RenderPassColorAttachment {
+                view: target,
+                resolve_target: None, // todo! what's this?
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: true,
+                },
+            }],
+            depth_stencil_attachment: None,
+            // depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+            //     view: stencil_view,
+            //     // depth_ops: None,
+            //     depth_ops: Some(wgpu::Operations {
+            //         load: wgpu::LoadOp::Clear(0.0),
+            //         store: true,
+            //     }),
+            //     // todo: what is this?
+            //     // stencil_ops: None,
+            //     stencil_ops: Some(wgpu::Operations {
+            //         load: wgpu::LoadOp::Clear(0),
+            //         store: true,
+            //     }), //Option<Operations<u32>>,
+            //         // stencil_ops: Some(wgpu::Operations {
+            //         //     load: wgpu::LoadOp::Clear(0),
+            //         //     store: true,
+            //         // }), //Option<Operations<u32>>,
+            // }),
+        };
+        let pass = self.encoder.begin_render_pass(&pass_desc);
+        BlitPass {
+            pass, 
+            bind_group_layout: &self.bind_group_layout,
+            sampler: &self.sampler,
+            bind_groups: &mut self.bind_groups,
+
+        }
+        // todo!()
+        // BlitPass {
+
+        // }
+    }
+
+    fn create_bind_group(
+        &mut self,
+        device: &wgpu::Device,
+        texture_view: &wgpu::TextureView,
+    ) -> &'a wgpu::BindGroup {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("blit bind group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+
+        // self.bind_groups.alloc(bind_group)
+        todo!()
+
+        // todo!()
+    }
+
+    // pub fn blit(
+    //     &mut self,
+    //     device: &wgpu::Device,
+    //     src: &wgpu::TextureView,
+    //     src_size: (f32, f32),
+    //     dst_origin: (f32, f32),
+    // ) {
+    //     let bg = self.create_bind_group(device, src);
+    //     // self.pass.set_bind_group(0, bg, &[]);
+    //     // unsafe {
+    //     //     self.pass.get_mut().set_bind_group(0, &bg, &[]);
+    //     // }
+    // }
+
+    pub fn finish(self) -> wgpu::CommandBuffer {
+        self.encoder.finish()
+    }
+}
+
+
 pub struct BlitPass<'a> {
     pub pass: wgpu::RenderPass<'a>,
     pub bind_group_layout: &'a wgpu::BindGroupLayout,
     pub sampler: &'a wgpu::Sampler,
+    pub bind_groups: &'a mut typed_arena::Arena<wgpu::BindGroup>,
     // bind_groups: Vec<wgpu::BindGroup>,
     // bind_group_cache: &'a mut BindGroupCache,
 }
@@ -338,94 +490,4 @@ impl<'a> BlitPass<'a> {
     // fn finish(mut self) -> wgpu::CommandBuffer {
     //     self.pass.finish()
     // }
-}
-
-// impl first  {
-
-// }
-
-impl WGPUBlitter {
-    pub fn create_blit_encoder<'a>(&'a self, device: &wgpu::Device) -> BlitEncoder<'a> {
-        let encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        todo!()
-    }
-}
-
-pub struct BindGroupCache {
-    inner: std::cell::UnsafeCell<Vec<wgpu::BindGroup>>,
-}
-
-impl BindGroupCache {
-    fn inner<'a>(&'a self) -> &'a mut Vec<wgpu::BindGroup> {
-        unsafe { self.inner.get().as_mut().unwrap() }
-    }
-
-    pub fn push(&self, x: wgpu::BindGroup) {
-        self.inner().push(x);
-    }
-
-    pub fn last<'a>(&'a self) -> &'a wgpu::BindGroup {
-        self.inner().last().unwrap()
-        // let m = self.inner.get().as_ref().unwrap();
-        // m.last()
-        // todo!()
-    }
-}
-
-// a outlasts b
-pub struct BlitEncoder<'a> {
-    encoder: wgpu::CommandEncoder,
-    bind_group_layout: &'a wgpu::BindGroupLayout,
-    sampler: &'a wgpu::Sampler,
-    pipeline: &'a wgpu::RenderPipeline,
-    // bind_groups: BindGroupCache,
-    bind_groups: typed_arena::Arena<wgpu::BindGroup>,
-    // pass: std::cell::UnsafeCell<wgpu::RenderPass<'a>>,
-    pass: wgpu::RenderPass<'a>,
-}
-
-impl<'a> BlitEncoder<'a> {
-    fn create_bind_group<'b>(
-        &'b self,
-        device: &wgpu::Device,
-        texture_view: &wgpu::TextureView,
-    ) -> &'b wgpu::BindGroup {
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("blit bind group"),
-            layout: &self.bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
-                },
-            ],
-        });
-
-        self.bind_groups.alloc(bind_group)
-
-        // todo!()
-    }
-
-    pub fn blit(
-        &mut self,
-        device: &wgpu::Device,
-        src: &wgpu::TextureView,
-        src_size: (f32, f32),
-        dst_origin: (f32, f32),
-    ) {
-        let bg = self.create_bind_group(device, src);
-        self.pass.set_bind_group(0, bg, &[]);
-        // unsafe {
-        //     self.pass.get_mut().set_bind_group(0, &bg, &[]);
-        // }
-    }
-
-    pub fn finish(self) -> wgpu::CommandBuffer {
-        self.encoder.finish()
-    }
 }
