@@ -52,7 +52,6 @@ impl WGPUBlitter {
         format: wgpu::TextureFormat,
         shader_flags: wgpu::ShaderFlags,
     ) -> Self {
-
         let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("blit.wgsl"))),
@@ -131,32 +130,7 @@ impl WGPUBlitter {
             pipeline,
         }
     }
-
-    pub fn create_bind_group(
-        &mut self,
-        device: &wgpu::Device,
-        texture_view: &wgpu::TextureView,
-    ) -> wgpu::BindGroup {
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("blit bind group"),
-            layout: &self.bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
-                },
-            ],
-        });
-
-        bind_group
-    }
-
 }
-
 
 impl WGPUBlitter {
     pub fn create_blit_encoder<'a>(&'a self, device: &wgpu::Device) -> BlitEncoder<'a> {
@@ -181,9 +155,7 @@ pub struct BlitEncoder<'a> {
     bind_group_layout: &'a wgpu::BindGroupLayout,
     sampler: &'a wgpu::Sampler,
     pipeline: &'a wgpu::RenderPipeline,
-    
 }
-
 
 impl<'a> BlitEncoder<'a> {
     pub fn create_blit_pass(&'a mut self, target: &'a wgpu::TextureView) -> BlitPass<'a> {
@@ -201,11 +173,10 @@ impl<'a> BlitEncoder<'a> {
         };
         let pass = self.encoder.begin_render_pass(&pass_desc);
         BlitPass {
-            pass, 
+            pass,
             bind_group_layout: &self.bind_group_layout,
             sampler: &self.sampler,
             bind_groups: &mut self.bind_groups,
-
         }
     }
 
@@ -213,7 +184,6 @@ impl<'a> BlitEncoder<'a> {
         self.encoder.finish()
     }
 }
-
 
 pub struct BlitPass<'a> {
     pub pass: wgpu::RenderPass<'a>,
@@ -223,7 +193,6 @@ pub struct BlitPass<'a> {
 }
 
 impl<'a> BlitPass<'a> {
-
     fn create_bind_group(
         &'a mut self,
         device: &wgpu::Device,
@@ -262,5 +231,4 @@ impl<'a> BlitPass<'a> {
         self.pass.set_bind_group(0, &bg, &[]);
         self.pass.draw(0..4, 0..1);
     }
-
 }

@@ -132,25 +132,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
                 let src_size = (tex_size.0 as f32, tex_size.1 as f32);
 
-                let bind_group = blitter.create_bind_group(&device, &texture_view);
-                let mut encoder =
-                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-                // let mut blit_pass = blitter.create_blit_pass(&mut encoder, &frame.view);
-                // //
-                // {
-                //     // self.bind_groups.push(bind_group);
-                //     // let bg = self.bind_groups.last().unwrap();
-                //     // self.bind_group_cache
-                //     // .get(device, self.bind_group_layout, id);
-                //     blit_pass
-                //         .pass
-                //         .set_viewport(50.0, 50.0, src_size.0, src_size.1, 0.0, 1.0);
 
-                //     blit_pass.pass.set_bind_group(0, &bind_group, &[]);
-                //     blit_pass.pass.draw(0..4, 0..1);
-                // }
-                // drop(blit_pass);
-                // queue.submit(Some(encoder.finish()));
 
                 let mut blit_encoder = blitter.create_blit_encoder(&device);
                 let mut blit_pass = blit_encoder.create_blit_pass(&frame.view);
@@ -159,7 +141,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     blit_pass.blit(&device, &texture_view, src_size, (50.0, 50.0));
                     drop(blit_pass);
                 }
-                
+
                 queue.submit(Some(blit_encoder.finish()));
             }
             Event::WindowEvent {
