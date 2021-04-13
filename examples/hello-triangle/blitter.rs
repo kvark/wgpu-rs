@@ -335,9 +335,6 @@ pub struct BlitEncoder<'a> {
     bind_group_layout: &'a wgpu::BindGroupLayout,
     sampler: &'a wgpu::Sampler,
     pipeline: &'a wgpu::RenderPipeline,
-    // bind_groups: BindGroupCache,
-
-    // pass: std::cell::UnsafeCell<wgpu::RenderPass<'a>>,
     
 }
 
@@ -444,8 +441,35 @@ pub struct BlitPass<'a> {
 }
 
 impl<'a> BlitPass<'a> {
+
+    fn create_bind_group(
+        &'a mut self,
+        device: &wgpu::Device,
+        texture_view: &wgpu::TextureView,
+    ) -> &'a wgpu::BindGroup {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("blit bind group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+
+        self.bind_groups.alloc(bind_group)
+        // todo!()
+
+        // todo!()
+    }
+
     pub fn blit(
-        &mut self,
+        &'a mut self,
         device: &wgpu::Device,
         src: &wgpu::TextureView,
         src_size: (f32, f32),
@@ -458,20 +482,22 @@ impl<'a> BlitPass<'a> {
         //     entries: &[],
         // });
 
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("blit bind group"),
-            layout: &self.bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(src),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
-                },
-            ],
-        });
+        // let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        //     label: Some("blit bind group"),
+        //     layout: &self.bind_group_layout,
+        //     entries: &[
+        //         wgpu::BindGroupEntry {
+        //             binding: 0,
+        //             resource: wgpu::BindingResource::TextureView(src),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 1,
+        //             resource: wgpu::BindingResource::Sampler(&self.sampler),
+        //         },
+        //     ],
+        // });
+
+        let bg = self.create_bind_group(device, src);
 
         // self.bind_groups.push(bind_group);
         // let bg = self.bind_groups.last().unwrap();
@@ -480,7 +506,7 @@ impl<'a> BlitPass<'a> {
         self.pass
             .set_viewport(dst_origin.0, dst_origin.1, src_size.0, src_size.1, 0.0, 1.0);
 
-        // self.pass.set_bind_group(0, &bg, &[]);
+        self.pass.set_bind_group(0, &bg, &[]);
         self.pass.draw(0..4, 0..1);
     }
 
